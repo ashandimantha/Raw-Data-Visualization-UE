@@ -8,6 +8,7 @@
 #include "JsonUtilities/Public/JsonObjectConverter.h"
 #include "EngineUtils.h"
 #include "Curves/CurveVector.h"
+#include <cmath>
 
 void ATaskGameModeBase::BeginPlay()
 {
@@ -86,6 +87,7 @@ void ATaskGameModeBase::SpawnActorsWithID()
 		ActorTransform.SetLocation(position);
 		APlayerActor* MyPlayer = GetWorld()->SpawnActor<APlayerActor>(APlayerActor::StaticClass(), ActorTransform);
 		MyPlayer->PlayerID = ID;
+        MyPlayer->SetActorLabel(FString::Printf(TEXT("ID_%d"), FMath::FloorToInt(ID)));
 		PlayerActors.Add(MyPlayer);
 		MyPlayer->UniqueCurve = NewObject<UCurveVector>(GetTransientPackage(), UCurveVector::StaticClass());
     }
@@ -109,7 +111,7 @@ void ATaskGameModeBase::SetCurveData()
             auto& Pair = PairsArray[PairIndex];
 
             // UE_LOG(LogTemp, Warning, TEXT("%f, %f, %f"), Pair.Value.X, Pair.Value.Y, Pair.Value.Z)
-            // Noticed That Tolarence needs to be 0 otherwise it does a normalized thing...........
+            // Noticed That tolarence needs to be 0 otherwise it does a normalized thing...........
             PlayerActors[PairIndex]->UniqueCurve->GetCurves()[0].CurveToEdit->UpdateOrAddKey(time, Pair.Value.X, false, 0);
             PlayerActors[PairIndex]->UniqueCurve->GetCurves()[1].CurveToEdit->UpdateOrAddKey(time, Pair.Value.Y, false, 0);
             PlayerActors[PairIndex]->UniqueCurve->GetCurves()[2].CurveToEdit->UpdateOrAddKey(time, Pair.Value.Z, false, 0);

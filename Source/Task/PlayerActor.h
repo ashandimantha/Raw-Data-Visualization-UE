@@ -30,7 +30,7 @@ public:
 
 #pragma region ImportingData
 	// Player ID from PositionalData
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Actor Info")
     int32 PlayerID;
 
 	// Initialization
