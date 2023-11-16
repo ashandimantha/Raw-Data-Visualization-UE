@@ -81,9 +81,6 @@ void APlayerActor::UpdateLocation()
 
 void APlayerActor::SetActorLocationFromTimeline(FVector NewLocation)
 {
-    // Calculate the rotation based on your logic (e.g., using FRotator::ZeroRotator for simplicity)
-    FRotator NewRotation = FRotator::ZeroRotator;
-
 	//UE_LOG(LogTemp, Warning, TEXT("%f, %f, %f"), NewLocation.X, NewLocation.Y, NewLocation.Z)
 
 	SetActorLocation(NewLocation, true, 0, ETeleportType::None);
