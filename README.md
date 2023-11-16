@@ -1,3 +1,3 @@
-# Task
+# Technical Task
  
-[![Watch the video](video_thumbnail.png)](Task%20Demo.mp4)
+[![Watch the video](Demo_Thumb.png)](Task%20Demo.mp4)
