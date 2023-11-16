@@ -19,19 +19,21 @@ APlayerActor::APlayerActor()
 		// Set the scale of the sphere
 		SphereMesh->SetWorldScale3D(FVector(.05f, .05f, .05f));
 
-		// Attach the mesh to the root component of the actor
-		SphereMesh->AttachToComponent(RootComponent, FAttachmentTransformRules::KeepRelativeTransform);
-
 		static ConstructorHelpers::FObjectFinder<UStaticMesh> SphereMeshAsset(TEXT("StaticMesh'/Engine/BasicShapes/Sphere.Sphere'"));
 		if (SphereMeshAsset.Succeeded())
 		{
 			SphereMesh->SetStaticMesh(SphereMeshAsset.Object);
 
-			// Load a default material and assign it to the sphere
-			static ConstructorHelpers::FObjectFinder<UMaterial> DefaultMaterial(TEXT("Material'/Engine/BasicShapes/BasicShapeMaterial.BasicShapeMaterial'"));
+			// Load and set the material
+			static ConstructorHelpers::FObjectFinder<UMaterial> DefaultMaterial(TEXT("/Game/Materials/ActorMat"));
 			if (DefaultMaterial.Succeeded())
 			{
 				SphereMesh->SetMaterial(0, DefaultMaterial.Object);
+			}
+			else
+			{
+				// Error massage
+				UE_LOG(LogTemp, Error, TEXT("Failed to load material: ActorMat"));
 			}
 		}
 	}

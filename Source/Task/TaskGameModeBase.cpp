@@ -18,13 +18,12 @@ void ATaskGameModeBase::BeginPlay()
 
 }
 
-
+// Read the JSON file
 void ATaskGameModeBase::LoadJsonData()
 {
     FString JsonFilePath = FPaths::ProjectContentDir() + TEXT("pos_test.json");
     FString JsonString;
 
-    // Read the JSON file into a string
     FFileHelper::LoadFileToString(JsonString, *JsonFilePath);
 
     TSharedPtr<FJsonObject> JsonObject;
