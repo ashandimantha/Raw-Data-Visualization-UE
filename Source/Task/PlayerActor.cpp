@@ -63,13 +63,11 @@ void APlayerActor::UpdateLocation()
     float TimelineDuration = 30.f;
     if (UniqueCurve)
     {
-		UE_LOG(LogTemp, Error, TEXT("UpdateLocation"));
+		// Update locations from a Timeline Function using premade curves
 		Timeline.SetTimelineLength(TimelineDuration);
 
         FOnTimelineVector TimelineProgress;
         TimelineProgress.BindUFunction(this, FName("SetActorLocationFromTimeline"));
-
-        // Assuming UniqueCurve is of type UCurveVector
 		Timeline.AddInterpVector(UniqueCurve, TimelineProgress);
 		Timeline.SetLooping(true);
 
@@ -86,7 +84,7 @@ void APlayerActor::SetActorLocationFromTimeline(FVector NewLocation)
     // Calculate the rotation based on your logic (e.g., using FRotator::ZeroRotator for simplicity)
     FRotator NewRotation = FRotator::ZeroRotator;
 
-	UE_LOG(LogTemp, Warning, TEXT("%f, %f, %f"), NewLocation.X, NewLocation.Y, NewLocation.Z)
+	//UE_LOG(LogTemp, Warning, TEXT("%f, %f, %f"), NewLocation.X, NewLocation.Y, NewLocation.Z)
 
 	SetActorLocation(NewLocation, true, 0, ETeleportType::None);
 }

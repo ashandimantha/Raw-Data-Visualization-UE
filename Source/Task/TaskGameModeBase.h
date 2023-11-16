@@ -40,12 +40,8 @@ public:
 	// Map to contain Time as Key and there ID with Transforms
 	TMap<double, TArray< TPair< float, FVector> > > PlayerPosMap;
 
-	//void UpdateActorPositions(double CurrentTime);
-
-	//const FVector* FindNextPosition(const TMap<double, TArray<TPair<float, FVector>>>& tMap, double StartTime, float ActorID, double CurrentTime);
-
+	// Array with pointers to hold dynamic object references
 	TArray<APlayerActor*> PlayerActors;
-
 
 	
 };
