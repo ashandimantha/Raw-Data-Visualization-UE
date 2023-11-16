@@ -28,12 +28,29 @@ APlayerActor::APlayerActor()
 			static ConstructorHelpers::FObjectFinder<UMaterial> DefaultMaterial(TEXT("/Game/Materials/ActorMat"));
 			if (DefaultMaterial.Succeeded())
 			{
-				SphereMesh->SetMaterial(0, DefaultMaterial.Object);
-			}
-			else
-			{
-				// Error massage
-				UE_LOG(LogTemp, Error, TEXT("Failed to load material: ActorMat"));
+				UMaterialInstanceDynamic* DynamicMaterial = UMaterialInstanceDynamic::Create(DefaultMaterial.Object, SphereMesh);
+
+				if (DynamicMaterial)
+				{
+					// Generate a random green value between 0 and 255
+					int32 RandomRedValue = FMath::RandRange(0, 2);
+					int32 RandomGreenValue = FMath::RandRange(0, 2);
+					int32 RandomBlueValue = FMath::RandRange(0, 2);
+
+					// Get the original color
+					FLinearColor OriginalColor = DynamicMaterial->K2_GetVectorParameterValue(FName("Color"));
+
+					// Set the new green value
+					OriginalColor.R = RandomRedValue;
+					OriginalColor.G = RandomGreenValue;
+					OriginalColor.B = RandomBlueValue;
+
+					// Set the updated color in the dynamic material
+					DynamicMaterial->SetVectorParameterValue(FName("Color"), OriginalColor);
+
+					// Set the dynamic material to the mesh
+					SphereMesh->SetMaterial(0, DynamicMaterial);
+				}
 			}
 		}
 	}

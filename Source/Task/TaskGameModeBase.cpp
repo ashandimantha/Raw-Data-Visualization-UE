@@ -88,7 +88,6 @@ void ATaskGameModeBase::SpawnActorsWithID()
 		MyPlayer->PlayerID = ID;
 		PlayerActors.Add(MyPlayer);
 		MyPlayer->UniqueCurve = NewObject<UCurveVector>(GetTransientPackage(), UCurveVector::StaticClass());
-
     }
 }
 
