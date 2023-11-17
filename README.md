@@ -1,7 +1,7 @@
 # Technical Task
 
-## Click to watch the Demo Reel
-[![Watch the video](Demo_thumb.jpg)](ARL_Task_Demo.mp4)
+## Watch Demo Reel
+https://github.com/ashandimantha/Task/assets/50605143/ade0246b-b424-4879-abdc-baf9dac584ba
 
 
 ### Resources
