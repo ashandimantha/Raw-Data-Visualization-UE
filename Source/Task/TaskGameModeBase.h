@@ -27,7 +27,6 @@ protected:
 private:
 	
 
-
 public:
 
 	UPROPERTY()
@@ -64,7 +63,10 @@ public:
 	UTexture2D* CreateTextureFromChannelData(int32 Width, int32 Height, const TArray<uint8>& ChannelData);
 
     UFUNCTION(BlueprintCallable)
-    TArray<uint8> ChannelData();
+    TArray<uint8> ExtractTiffChannels(int&ImageWidth, int& ImageHeight);
+
+	UPROPERTY(EditAnywhere)
+	int AlphaChannel;
 
 #pragma endregion 
 };

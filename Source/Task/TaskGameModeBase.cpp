@@ -30,8 +30,8 @@ void ATaskGameModeBase::BeginPlay()
     //ExampleUsage();
     //AsyncLoadJsonData();
 
-    SpawnActorsWithID();
-    SetCurveData();
+    //SpawnActorsWithID();
+    //SetCurveData();
 
 }
 
@@ -209,42 +209,6 @@ void ATaskGameModeBase::ProcessPositionalData(const TSharedPtr<FJsonValue>& Posi
     }
 }
 
-UTexture2D* ATaskGameModeBase::CreateTextureFromChannelData(int32 Width, int32 Height, const TArray<uint8>& ChannelData)
-{
-    // Needs to check this format if its 8Bit or 
-    UTexture2D* NewTexture = UTexture2D::CreateTransient(Width, Height, PF_R8G8B8A8);
-    if (!NewTexture) {
-        return nullptr;
-    }
-
-    // Lock the texture for writing
-    void* TextureData = NewTexture->PlatformData->Mips[0].BulkData.Lock(LOCK_READ_WRITE);
-
-    // Copy the channel data to the texture
-    for (int32 y = 0; y < Height; y++)
-    {
-        for (int32 x = 0; x < Width; x++)
-        {
-            int32 CurrentPixelIndex = y * Width + x;
-            uint8 CurrentPixelValue = ChannelData[CurrentPixelIndex];
-
-            // Assuming grayscale data for this channel, replicate the value across all color channels
-            FColor PixelColor(CurrentPixelValue, CurrentPixelValue, CurrentPixelValue, 255); // R, G, B, A
-
-            // Write the pixel color to the texture data
-            ((FColor*)TextureData)[CurrentPixelIndex] = PixelColor;
-        }
-    }
-
-    // Unlock the texture
-    NewTexture->PlatformData->Mips[0].BulkData.Unlock();
-
-    // Update the texture resource
-    NewTexture->UpdateResource();
-
-    return NewTexture;
-}
-
 void ATaskGameModeBase::SpawnActorsWithID()
 {
     //PlayerActors.Reserve(PlayerPosMap.Num());
@@ -284,61 +248,103 @@ void ATaskGameModeBase::SetCurveData()
     }
 }
 
-// Function to extract RGB and Alpha channels from TIFF
-inline std::vector<std::vector<uint8>> ExtractTIFFChannels(const char* filename) {
-    TIFF* tif = TIFFOpen(filename, "r");
-    if (!tif) {
-        std::cerr << "Error opening TIFF file." << std::endl;
-        return {};
+UTexture2D* ATaskGameModeBase::CreateTextureFromChannelData(int32 Width, int32 Height, const TArray<uint8>& ChannelData)
+{
+    FString AssetName = TEXT("Source/Task/Alpha");
+	UPackage* Package = CreatePackage(*AssetName);
+	Package->FullyLoad();
+
+    // Needs to check this format if its 8Bit or 
+    UTexture2D* NewTexture = UTexture2D::CreateTransient(Width, Height, PF_R8G8B8A8);
+
+    if (!NewTexture) {
+        return nullptr;
     }
 
-    uint32 width, height;
-    size_t npixels;
-    uint32* raster;
+    // Lock the texture for writing
+    void* TextureData = NewTexture->PlatformData->Mips[0].BulkData.Lock(LOCK_READ_WRITE);
+    auto TexturePlatformData = NewTexture->GetPlatformData();
 
-    TIFFGetField(tif, TIFFTAG_IMAGEWIDTH, &width);
-    TIFFGetField(tif, TIFFTAG_IMAGELENGTH, &height);
-    npixels = width * height;
-    raster = (uint32*)_TIFFmalloc(npixels * sizeof(uint32));
+    // Copy the channel data to the texture
+    for (int32 y = 0; y < Height; y++)
+    {
+        for (int32 x = 0; x < Width; x++)
+        {
+            int32 CurrentPixelIndex = y * Width + x;
+            uint8 CurrentPixelValue = ChannelData[CurrentPixelIndex];
+            FColor PixelColor(CurrentPixelValue, CurrentPixelValue, CurrentPixelValue, CurrentPixelValue); 
 
-    if (!raster || !TIFFReadRGBAImage(tif, width, height, raster, 0)) {
-        TIFFClose(tif);
-        std::cerr << "Error reading TIFF data." << std::endl;
-        return {};
+            // Write the pixel color to the texture data
+            ((FColor*)TextureData)[CurrentPixelIndex] = PixelColor;
+        }
     }
 
-    // 21 channels: RGB + 18 Alpha
-    std::vector<std::vector<uint8>> channels;
-    channels.resize(21, std::vector<uint8>(npixels));
+    // Unlock the texture
+    NewTexture->PlatformData->Mips[0].BulkData.Unlock();
 
-    for (size_t i = 0; i < npixels; ++i) {
-        channels[0][i] = TIFFGetR(raster[i]); // Red channel
-        channels[1][i] = TIFFGetG(raster[i]); // Green channel
-        channels[2][i] = TIFFGetB(raster[i]); // Blue channel
-        channels[3][i] = TIFFGetA(raster[i]); // Alpha channel
-    }
-
-    _TIFFfree(raster);
-    TIFFClose(tif);
-    return channels;
+    // Update the texture resource
+    NewTexture->UpdateResource();
+    return NewTexture;
 }
 
-TArray<uint8> ATaskGameModeBase::ChannelData()
+// Function to extract the 5th channel from a TIFF file
+TArray<uint8> ATaskGameModeBase::ExtractTiffChannels(int& ImageWidth, int& ImageHeight)
 {
     TArray<uint8> ChannelData;
-    std::string filePath = "path/to/your/file.tif";  // Replace with your actual file path
-    //auto channels = ExtractTIFFChannels(filePath.c_str());
 
-    //TIFF* image = nullptr;
-    ////image.
+    FString FullFilePath = FPaths::ProjectDir() / TEXT("Source/Task/cutout.tif");
+    std::string FullFilePathStd = TCHAR_TO_UTF8(*FullFilePath);
 
-    //for (auto channel : channels)
-    //{
-	   // for (uint8 i : channel)
-	   // {
-		  //  ChannelData.Push(i);
-	   // }
-    //}
+    TIFF* tif = TIFFOpen(FullFilePathStd.c_str(), "r");
+    if (tif)
+    {
+        uint32 width, height, samplesPerPixel;
+        TIFFGetField(tif, TIFFTAG_IMAGEWIDTH, &width);
+        TIFFGetField(tif, TIFFTAG_IMAGELENGTH, &height);
+        TIFFGetField(tif, TIFFTAG_SAMPLESPERPIXEL, &samplesPerPixel);
+		
+        if (samplesPerPixel < 5)
+        {
+            // The image does not have enough channels
+            TIFFClose(tif);
+            return ChannelData;
+        }
+
+        // can also have this beauty tdata_t image data reference
+        auto Buffer = _TIFFmalloc(TIFFScanlineSize(tif));
+
+        if (!Buffer)
+        {
+            TIFFClose(tif);
+            return ChannelData;
+        }
+
+        for (uint32 row = 0; row < height; row++)
+        {
+            if (TIFFReadScanline(tif, Buffer, row) == -1)
+            {
+                // Error reading the scanline 
+                break;
+            }
+
+            // Cast buffer to the proper type matching the bit depth of the TIFF
+            uint8* scanline = static_cast<uint8*>(Buffer);
+
+            for (uint32 col = 0; col < width; col++)
+            {
+                // 0-based index, so 4 represents the 5th channel
+                int ChannelIndex = (col * samplesPerPixel) + AlphaChannel;
+                uint8 ChannelValue = scanline[ChannelIndex];
+                ChannelData.Add(ChannelValue);
+            }
+        }
+
+        _TIFFfree(Buffer);
+        TIFFClose(tif);
+
+        ImageWidth = width;
+        ImageHeight = height;
+    }
 
     return ChannelData;
 }
