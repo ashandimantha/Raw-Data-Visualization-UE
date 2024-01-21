@@ -57,18 +57,6 @@ public:
 	TArray<APlayerActor*> PlayerActors;
 
 	FCriticalSection* PlayerPosMapLock;
-
-#pragma region TiffImport
-	UFUNCTION(BlueprintCallable)
-	UTexture2D* CreateTextureFromChannelData(int32 Width, int32 Height, const TArray<uint8>& ChannelData);
-
-    UFUNCTION(BlueprintCallable)
-    TArray<uint8> ExtractTiffChannels(int&ImageWidth, int& ImageHeight);
-
-	UPROPERTY(EditAnywhere)
-	int AlphaChannel;
-
-#pragma endregion 
 };
 
 

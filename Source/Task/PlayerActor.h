@@ -47,9 +47,6 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Material Properties")
 	FMaterialData MaterialData;
 
-	//UPROPERTY()
-	//FVector AActorPosition;
-
 	// Update Actor Locations according the time
 	void UpdateLocation();
 
