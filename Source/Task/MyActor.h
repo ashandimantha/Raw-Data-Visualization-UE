@@ -28,7 +28,13 @@ public:
 	virtual void Tick(float DeltaTime) override;
 
 	UFUNCTION(BlueprintCallable, Category = "TIFF Loader")
-	UTexture2D* CreateTextureFromChannelData(int32 Width, int32 Height, const TArray<uint8>& ChannelData, FString ChannelDepth);
+	UTexture2D* CreateTexture2DFromChannelData(int32 Width, int32 Height, const TArray<uint8>& ChannelData, FString ChannelDepth);
+
+	UFUNCTION(BlueprintCallable, Category = "TIFF Loader")
+	UTexture2DDynamic* CreateTexture2DDynamicFromChannelData(int32 Width, int32 Height, const TArray<uint8>& ChannelData, FString ChannelDepth);
+
+	UFUNCTION(BlueprintCallable, Category = "TIFF Loader")
+	UTexture2D* ConvertImage(UTexture2DDynamic* DynTex);
 
 	UFUNCTION(BlueprintCallable, Category = "TIFF Loader")
 	TArray<uint8> ExtractTiffChannels(int& ImageWidth, int& ImageHeight, int DepthIndex);
@@ -42,6 +48,6 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TIFF Loader")
 	int AlphaChannel = 0;
 
-	UPROPERTY(EditAnywhere)
-	UTexture2D* SavedImage;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TIFF Loader")
+	UTexture* SavedImage;
 };

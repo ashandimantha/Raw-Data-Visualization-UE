@@ -7,6 +7,9 @@
 
 #include "AssetRegistry/AssetRegistryModule.h"
 #include "Engine/Texture2DArray.h"
+#include "Runtime/RHI/Public/RHI.h"
+#include "Engine/Texture2D.h"
+#include "Engine/Texture2DDynamic.h"
 
 THIRD_PARTY_INCLUDES_START
 #include "Tiffio.h"
@@ -33,8 +36,8 @@ void AMyActor::EndPlay(const EEndPlayReason::Type EndPlayReason)
 
     if (Texture2DArray != nullptr)
     {
-        Texture2DArray->SourceTextures.Empty();
-        Texture2DArray->ReleaseResource();
+        //Texture2DArray->SourceTextures.Empty();
+        //Texture2DArray->ReleaseResource();
     }
 }
 
@@ -45,7 +48,123 @@ void AMyActor::Tick(float DeltaTime)
 
 }
 
-UTexture2D* AMyActor::CreateTextureFromChannelData(int32 Width, int32 Height, const TArray<uint8>& ChannelData, FString ChannelDepth)
+UTexture2DDynamic* AMyActor::CreateTexture2DDynamicFromChannelData(int32 Width, int32 Height, const TArray<uint8>& ChannelData, FString ChannelDepth)
+{
+    // Create a new dynamic texture
+    UTexture2DDynamic* NewTexture = UTexture2DDynamic::Create(Width, Height, FTexture2DDynamicCreateInfo());
+    if (!NewTexture)
+    {
+        return nullptr;
+    }
+
+    // Access the underlying texture resource
+    FTexture2DDynamicResource* TextureResource = static_cast<FTexture2DDynamicResource*>(NewTexture->Resource);
+    if (!TextureResource)
+    {
+        return nullptr;
+    }
+
+    // Lock the texture for writing
+    int32 BytesPerPixel = 4; // For PF_B8G8R8A8 format
+    TArray<uint8> Pixels;
+    Pixels.SetNum(Width * Height * BytesPerPixel);
+
+    // Copy the channel data to the texture
+    for (int32 y = 0; y < Height; y++)
+    {
+        for (int32 x = 0; x < Width; x++)
+        {
+            int32 CurrentPixelIndex = (y * Width + x) * BytesPerPixel;
+            uint8 CurrentPixelValue = ChannelData[y * Width + x];
+            Pixels[CurrentPixelIndex] = CurrentPixelValue;       // Red
+            Pixels[CurrentPixelIndex + 1] = CurrentPixelValue;   // Green
+            Pixels[CurrentPixelIndex + 2] = CurrentPixelValue;   // Blue
+            Pixels[CurrentPixelIndex + 3] = CurrentPixelValue;                 // Alpha
+        }
+    }
+
+    // Update the texture with new data
+    ENQUEUE_RENDER_COMMAND(UpdateDynamicTextureData)(
+        [NewTexture, Pixels, Width, Height](FRHICommandListImmediate& RHICmdList)
+        {
+            FUpdateTextureRegion2D UpdateRegion(0, 0, 0, 0, Width, Height);
+            RHIUpdateTexture2D(
+                ((FTexture2DDynamicResource*)NewTexture->Resource)->GetTexture2DRHI(),
+                0,
+                UpdateRegion,
+                Width * 4,
+                Pixels.GetData()
+            );
+        }
+    );
+
+    FRHITexture2DArray
+
+    Texture2DArray->SourceTextures.Push();
+    Texture2DArray->UpdateSourceFromSourceTextures();
+
+    return NewTexture;
+}
+
+UTexture2D* AMyActor::ConvertImage(UTexture2DDynamic* DynTex)
+{
+    if (!DynTex || !DynTex->Resource)
+    {
+        return nullptr;
+    }
+
+    int32 Width = DynTex->SizeX;
+    int32 Height = DynTex->SizeY;
+
+    // Create a transient texture
+    UTexture2D* ResultTexture = UTexture2D::CreateTransient(Width, Height);
+    if (!ResultTexture)
+    {
+        return nullptr;
+    }
+
+    // Ensure the texture is in the correct format and has necessary properties set
+    ResultTexture->PlatformData = new FTexturePlatformData();
+    ResultTexture->PlatformData->SizeX = Width;
+    ResultTexture->PlatformData->SizeY = Height;
+    ResultTexture->PlatformData->PixelFormat = PF_R8G8B8A8;
+
+    // Setting up the first mip map level
+    FTexture2DMipMap* Mip = new FTexture2DMipMap();
+    ResultTexture->PlatformData->Mips.Add(Mip);
+    Mip->SizeX = Width;
+    Mip->SizeY = Height;
+
+    ResultTexture->Filter = TF_Default; // Set the texture filtering mode
+    ResultTexture->SRGB = true; // Set this based on whether your texture is in sRGB space
+
+    ResultTexture->UpdateResource();
+
+    // Copy texture data
+    ENQUEUE_RENDER_COMMAND(FConvertTextures)(
+        [TextureResource = static_cast<FTexture2DDynamicResource*>(DynTex->Resource), ResultTexture](FRHICommandListImmediate& RHICmdList)
+        {
+            FTexture2DRHIRef TextureRHI = TextureResource->GetTexture2DRHI();
+            uint32 DestStride = 0;
+            uint8* ReadData = reinterpret_cast<uint8*>(RHILockTexture2D(TextureRHI, 0, RLM_ReadOnly, DestStride, false));
+            if (ReadData)
+            {
+                FTexture2DMipMap& Mip = ResultTexture->PlatformData->Mips[0];
+                void* Data = Mip.BulkData.Lock(LOCK_READ_WRITE);
+                if (Data)
+                {
+                    FMemory::Memcpy(Data, ReadData, TextureRHI->GetSizeX() * TextureRHI->GetSizeY() * 4);
+                    Mip.BulkData.Unlock();
+                }
+                RHIUnlockTexture2D(TextureRHI, 0, false);
+            }
+            ResultTexture->UpdateResource();
+        });
+
+    return ResultTexture;
+}
+
+UTexture2D* AMyActor::CreateTexture2DFromChannelData(int32 Width, int32 Height, const TArray<uint8>& ChannelData, FString ChannelDepth)
 {
     FString TextureAssetName = TEXT("AlphaChannel" + ChannelDepth);
     FString PackageName = TEXT("/Game/Assets/AlphaChannel" + ChannelDepth);
@@ -66,7 +185,7 @@ UTexture2D* AMyActor::CreateTextureFromChannelData(int32 Width, int32 Height, co
 	UTexture2D* NewTexture = NewObject<UTexture2D>(Package, UTexture2D::StaticClass(), FName(*TextureAssetName), RF_Public | RF_Standalone);
 	if (!NewTexture) return nullptr;
 
-    NewTexture->AddToRoot();	
+    NewTexture->AddToRoot();
 	NewTexture->SetPlatformData(new FTexturePlatformData());
 	NewTexture->GetPlatformData()->SizeX = Width;
 	NewTexture->GetPlatformData()->SizeY = Height;
@@ -122,7 +241,6 @@ UTexture2D* AMyActor::CreateTextureFromChannelData(int32 Width, int32 Height, co
 
     return NewTexture;
 }
-
 
 // Function to extract the 5th channel from a TIFF file
 TArray<uint8> AMyActor::ExtractTiffChannels(int& ImageWidth, int& ImageHeight, int DepthIndex)
